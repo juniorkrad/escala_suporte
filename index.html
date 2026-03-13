@@ -100,12 +100,13 @@
   /* Linha individual do colaborador */
   .shift-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 4px;
   }
 
   .emp-name {
+    flex: 1;
+    min-width: 0;
     font-size: 0.65rem;
     font-weight: 500;
     color: var(--md-sys-color-secondary);
@@ -114,9 +115,9 @@
     text-overflow: ellipsis;
   }
 
-  /* Estilo dos Selects reduzidos */
+  /* Estilo dos Selects */
   .shift-select {
-    width: 60%;
+    width: 55px;
     font-family: 'Roboto Mono', monospace;
     font-size: 0.65rem;
     font-weight: 500;
@@ -125,19 +126,20 @@
     appearance: none;
     cursor: pointer;
     outline: none;
+    text-align: center;
   }
 
   .shift-select option { background-color: var(--md-sys-color-surface); color: var(--md-sys-color-on-background); font-size: 0.8rem;}
 
-  /* Cores baseadas na seleção (controlado via JS) */
+  /* Cores baseadas na seleção */
   .s-normal { background-color: transparent; color: var(--md-sys-color-secondary); border: 1px solid rgba(204, 194, 220, 0.3); }
   .s-sabado { background-color: rgba(204, 194, 220, 0.1); color: var(--md-sys-color-on-background); border: 1px solid rgba(204, 194, 220, 0.4); }
   .s-plantao { background-color: rgba(208, 188, 255, 0.2); color: var(--md-sys-color-primary); border: 1px solid rgba(208, 188, 255, 0.5); }
   .s-fds { background-color: rgba(73, 69, 79, 0.3); color: #A8A0B1; border: 1px solid rgba(73, 69, 79, 0.5); }
 
-  /* Área de Auditoria (Dashboard Lateral) */
+  /* Área de Auditoria - LARGURA REDUZIDA */
   .audit-area {
-    width: 350px;
+    width: 250px;
     background-color: var(--md-sys-color-surface);
     border-left: 1px solid var(--md-sys-color-outline);
     display: flex;
@@ -170,7 +172,7 @@
 
   .stat-row {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Ajustado para separar esquerda-direita */
     font-size: 0.8rem;
     margin-bottom: 6px;
     padding: 4px 8px;
@@ -240,8 +242,8 @@
 </div>
 
 <script>
-  // Configuração da Equipe e Turnos Atualizados
-  const employees = ['GLAUCIA', 'LUIS GUILHERME', 'CRISTOFER', 'DEIVISSON', 'ÁTILA', 'FELIPE', 'TAIANE', 'ISABELA', 'DANIEL', 'LUIZ ALBERTO', 'JUAN', 'FABIO'];
+  // Configuração da Equipe Suporte Básico (Nomes Abreviados)
+  const employees = ['GLAUCIA', 'LUIS G.', 'CRISTOFER', 'DEIVISSON', 'ÁTILA', 'FELIPE', 'TAIANE', 'ISABELA', 'DANIEL', 'LUIZ A.', 'JUAN', 'FABIO'];
   
   const shifts = {
     'normal_7': { emoji: '🏢', label: '7h', hours: 7, class: 's-normal' },
@@ -254,12 +256,12 @@
 
   // Gerador de Calendário
   const calendarData = [
-    { month: 'Março 2026', days: 31, startDay: 0 }, // 0 = Domingo
-    { month: 'Abril 2026', days: 30, startDay: 3 }  // 3 = Quarta
+    { month: 'Março 2026', days: 31, startDay: 0 }, 
+    { month: 'Abril 2026', days: 30, startDay: 3 }  
   ];
 
   const calendarArea = document.getElementById('calendarArea');
-  let globalDayCounter = 0; // Para rastrear a sequência contínua de dias
+  let globalDayCounter = 0; 
 
   // Função para criar as opções do Select
   function createSelectOptions(selectedKey) {
@@ -273,6 +275,7 @@
 
   // Inicializa a Interface
   function initApp() {
+    calendarArea.innerHTML = ''; 
     calendarData.forEach(month => {
       // Título do Mês
       calendarArea.innerHTML += `<h3 class="month-title">${month.month}</h3>`;
@@ -280,7 +283,7 @@
       const grid = document.createElement('div');
       grid.className = 'calendar-grid';
       
-      // Cabeçalhos (Dom a Sab)
+      // Cabeçalhos
       const daysOfWeek = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
       daysOfWeek.forEach(d => {
         grid.innerHTML += `<div class="day-header">${d}</div>`;
@@ -301,14 +304,13 @@
         
         // Adiciona um container com Nome + Select para cada colaborador
         employees.forEach(emp => {
-          // Lógica básica inicial (Padrão para não carregar vazio)
           let defaultShift = 'normal';
           if (currentWeekDay === 0) defaultShift = 'folga';
           if (currentWeekDay === 6) defaultShift = 'sabado';
           
           cellHtml += `
             <div class="shift-row">
-              <span class="emp-name">${emp}</span>
+              <span class="emp-name" title="${emp}">${emp}</span>
               <select class="shift-select ${shifts[defaultShift].class}" 
                       data-emp="${emp}" 
                       data-day="${globalDayCounter}"
@@ -327,7 +329,7 @@
       calendarArea.appendChild(grid);
     });
 
-    calculateAudit(); // Roda a auditoria inicial
+    calculateAudit(); 
   }
 
   // Atualiza a cor do select ao mudar e recalcula
@@ -373,39 +375,31 @@
       for (let i = 0; i < globalDayCounter; i++) {
         const hours = empData[emp].days[i] || 0;
         
-        // Verifica que dia da semana é o dia 'i' (O dia 0, 1 de Março, é Domingo = 0)
         const actualWeekDay = (0 + i) % 7; 
         
-        // Lógica de fechamento de semana: FECHA ANTES DE SOMAR O DOMINGO NOVO
         if (actualWeekDay === 0 && i !== 0) {
-          // Chegou no domingo (e não é o primeiro dia do calendário).
-          // Salva a semana ANTERIOR.
           const alertClass = weeklyHours > 44 ? 'stat-alert' : '';
           htmlStats += `<div class="stat-row ${alertClass}"><span>Semana ${weekCount}:</span> <span>${weeklyHours}h</span></div>`;
           
-          weeklyHours = 0; // Reseta para a nova semana que começa AGORA (neste Domingo)
+          weeklyHours = 0; 
           weekCount++;
         }
 
-        // Lógica de dias consecutivos
         if (hours > 0) {
           consecutiveDays++;
           if (consecutiveDays > maxConsecutive) maxConsecutive = consecutiveDays;
         } else {
-          consecutiveDays = 0; // Zerou, teve folga
+          consecutiveDays = 0; 
         }
 
-        // Lógica de horas na semana: AGORA SOMA O DOMINGO NA SEMANA CORRETA
         weeklyHours += hours;
 
-        // Se for o último dia do calendário, força o fechamento da última semana parcial
         if (i === globalDayCounter - 1) {
              const alertClass = weeklyHours > 44 ? 'stat-alert' : '';
              htmlStats += `<div class="stat-row ${alertClass}"><span>Semana ${weekCount}:</span> <span>${weeklyHours}h</span></div>`;
         }
       }
 
-      // Constrói o card do colaborador
       const consecAlert = maxConsecutive > 6 ? 'stat-alert' : '';
       
       const card = `
@@ -422,7 +416,6 @@
     });
   }
 
-  // Inicia o app ao carregar a página
   window.onload = initApp;
 
 </script>
