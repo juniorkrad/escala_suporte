@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Suporte Básico - Gestão de Escala Interativa</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --md-sys-color-background: #1C1B1F;
+    --md-sys-color-on-background: #E6E1E5;
+    --md-sys-color-surface: #2B2930;
+    --md-sys-color-primary: #D0BCFF;
+    --md-sys-color-outline: #49454F;
+    --md-sys-color-secondary: #CCC2DC;
+    --md-sys-color-error: #F2B8B5;
+    --md-sys-color-success: #C4EED0;
+  }
+
+  body {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    font-family: 'Roboto Mono', monospace;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    background-color: var(--md-sys-color-surface);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+  }
+
+  h2 { margin: 0; color: var(--md-sys-color-primary); font-size: 1.2rem; text-transform: uppercase; }
+
+  .main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Área do Calendário */
+  .calendar-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .month-title { color: var(--md-sys-color-secondary); margin-bottom: 16px; margin-top: 32px; border-bottom: 1px solid var(--md-sys-color-outline); padding-bottom: 8px;}
+  .month-title:first-child { margin-top: 0; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background-color: var(--md-sys-color-surface);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--md-sys-color-outline);
+  }
+
+  .day-header {
+    color: var(--md-sys-color-primary);
+    font-weight: 700;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    font-size: 0.85rem;
+  }
+
+  .day-cell {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    padding: 6px;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .empty-cell { background-color: transparent; border: none; }
+  .weekend { background-color: rgba(255, 255, 255, 0.04); }
+
+  .date-number {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--md-sys-color-on-background);
+    margin-bottom: 6px;
+    align-self: flex-end;
+  }
+
+  /* Linha individual do colaborador */
+  .shift-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .emp-name {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--md-sys-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Estilo dos Selects reduzidos */
+  .shift-select {
+    width: 60%;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 2px 4px;
+    border-radius: 4px;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .shift-select option { background-color: var(--md-sys-color-surface); color: var(--md-sys-color-on-background); font-size: 0.8rem;}
+
+  /* Cores baseadas na seleção (controlado via JS) */
+  .s-normal { background-color: transparent; color: var(--md-sys-color-secondary); border: 1px solid rgba(204, 194, 220, 0.3); }
+  .s-sabado { background-color: rgba(204, 194, 220, 0.1); color: var(--md-sys-color-on-background); border: 1px solid rgba(204, 194, 220, 0.4); }
+  .s-plantao { background-color: rgba(208, 188, 255, 0.2); color: var(--md-sys-color-primary); border: 1px solid rgba(208, 188, 255, 0.5); }
+  .s-fds { background-color: rgba(73, 69, 79, 0.3); color: #A8A0B1; border: 1px solid rgba(73, 69, 79, 0.5); }
+
+  /* Área de Auditoria (Dashboard Lateral) */
+  .audit-area {
+    width: 350px;
+    background-color: var(--md-sys-color-surface);
+    border-left: 1px solid var(--md-sys-color-outline);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .audit-header {
+    padding: 16px;
+    background-color: var(--md-sys-color-surface); 
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    position: sticky;
+    top: 0;
+    font-weight: 700;
+    color: var(--md-sys-color-primary);
+    z-index: 5; 
+  }
+
+  .employee-card {
+    padding: 16px;
+    border-bottom: 1px solid var(--md-sys-color-outline);
+  }
+
+  .employee-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--md-sys-color-on-background);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    background-color: rgba(255,255,255,0.02);
+    border-radius: 4px;
+  }
+
+  .stat-alert {
+    background-color: rgba(242, 184, 181, 0.15) !important;
+    color: var(--md-sys-color-error);
+    border: 1px solid var(--md-sys-color-error);
+    font-weight: 700;
+  }
+  
+  .legend {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: var(--md-sys-color-secondary);
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 0 24px;
+  }
+
+  .legend span {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--md-sys-color-outline);
+  }
+
+  /* Responsividade */
+  @media (max-width: 900px) {
+    .main-container { flex-direction: column; overflow-y: auto; }
+    .calendar-area { overflow-y: visible; }
+    .audit-area { width: 100%; border-left: none; border-top: 1px solid var(--md-sys-color-outline); overflow-y: visible; }
+    .calendar-grid { grid-template-columns: repeat(1, 1fr); gap: 12px; padding: 0; background: transparent; border: none;}
+    .day-header { display: none; }
+    .day-cell { min-height: auto; padding: 12px; border: 1px solid var(--md-sys-color-outline); background-color: var(--md-sys-color-surface); }
+    .date-number::before { content: "Dia "; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h2>Painel de Auditoria Suporte Básico</h2>
+  <div style="font-size: 0.8rem; color: var(--md-sys-color-secondary);">Limites: 44h semanais | Máx 6 dias seguidos</div>
+</header>
+
+<div class="legend">
+  <span class="s-normal">🏢 7h / 8h / 9h</span>
+  <span class="s-plantao">🚨 Plantão (8h)</span>
+  <span class="s-sabado">⏱️ Curto (4h)</span>
+  <span class="s-fds">🛌 Folga (0h)</span>
+</div>
+
+<div class="main-container">
+  <div class="calendar-area" id="calendarArea">
+    </div>
+
+  <div class="audit-area">
+    <div class="audit-header">📊 Análise em Tempo Real</div>
+    <div id="auditContent">
+      </div>
+  </div>
+</div>
+
+<script>
+  // Configuração da Equipe e Turnos Atualizados
+  const employees = ['GLAUCIA', 'LUIS GUILHERME', 'CRISTOFER', 'DEIVISSON', 'ÁTILA', 'FELIPE', 'TAIANE', 'ISABELA', 'DANIEL', 'LUIZ ALBERTO', 'JUAN', 'FABIO'];
+  
+  const shifts = {
+    'normal_7': { emoji: '🏢', label: '7h', hours: 7, class: 's-normal' },
+    'normal':   { emoji: '🏢', label: '8h', hours: 8, class: 's-normal' },
+    'normal_9': { emoji: '🏢', label: '9h', hours: 9, class: 's-normal' },
+    'plantao':  { emoji: '🚨', label: '8h', hours: 8, class: 's-plantao' },
+    'sabado':   { emoji: '⏱️', label: '4h', hours: 4, class: 's-sabado' },
+    'folga':    { emoji: '🛌', label: '0h', hours: 0, class: 's-fds' }
+  };
+
+  // Gerador de Calendário
+  const calendarData = [
+    { month: 'Março 2026', days: 31, startDay: 0 }, // 0 = Domingo
+    { month: 'Abril 2026', days: 30, startDay: 3 }  // 3 = Quarta
+  ];
+
+  const calendarArea = document.getElementById('calendarArea');
+  let globalDayCounter = 0; // Para rastrear a sequência contínua de dias
+
+  // Função para criar as opções do Select
+  function createSelectOptions(selectedKey) {
+    let html = '';
+    for (const [key, shift] of Object.entries(shifts)) {
+      const isSelected = key === selectedKey ? 'selected' : '';
+      html += `<option value="${key}" ${isSelected}>${shift.emoji} ${shift.label}</option>`;
+    }
+    return html;
+  }
+
+  // Inicializa a Interface
+  function initApp() {
+    calendarData.forEach(month => {
+      // Título do Mês
+      calendarArea.innerHTML += `<h3 class="month-title">${month.month}</h3>`;
+      
+      const grid = document.createElement('div');
+      grid.className = 'calendar-grid';
+      
+      // Cabeçalhos (Dom a Sab)
+      const daysOfWeek = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+      daysOfWeek.forEach(d => {
+        grid.innerHTML += `<div class="day-header">${d}</div>`;
+      });
+
+      // Células vazias iniciais
+      for (let i = 0; i < month.startDay; i++) {
+        grid.innerHTML += `<div class="day-cell empty-cell"></div>`;
+      }
+
+      // Dias do Mês
+      for (let day = 1; day <= month.days; day++) {
+        const currentWeekDay = (month.startDay + day - 1) % 7;
+        const isWeekend = currentWeekDay === 0 || currentWeekDay === 6;
+        
+        let cellHtml = `<div class="day-cell ${isWeekend ? 'weekend' : ''}" data-day="${globalDayCounter}" data-weekday="${currentWeekDay}">`;
+        cellHtml += `<div class="date-number">${day}</div>`;
+        
+        // Adiciona um container com Nome + Select para cada colaborador
+        employees.forEach(emp => {
+          // Lógica básica inicial (Padrão para não carregar vazio)
+          let defaultShift = 'normal';
+          if (currentWeekDay === 0) defaultShift = 'folga';
+          if (currentWeekDay === 6) defaultShift = 'sabado';
+          
+          cellHtml += `
+            <div class="shift-row">
+              <span class="emp-name">${emp}</span>
+              <select class="shift-select ${shifts[defaultShift].class}" 
+                      data-emp="${emp}" 
+                      data-day="${globalDayCounter}"
+                      onchange="updateShift(this)">
+                ${createSelectOptions(defaultShift)}
+              </select>
+            </div>
+          `;
+        });
+        
+        cellHtml += `</div>`;
+        grid.innerHTML += cellHtml;
+        globalDayCounter++;
+      }
+      
+      calendarArea.appendChild(grid);
+    });
+
+    calculateAudit(); // Roda a auditoria inicial
+  }
+
+  // Atualiza a cor do select ao mudar e recalcula
+  window.updateShift = function(selectElement) {
+    const val = selectElement.value;
+    selectElement.className = `shift-select ${shifts[val].class}`;
+    calculateAudit();
+  };
+
+  // Motor de Auditoria
+  function calculateAudit() {
+    const auditContent = document.getElementById('auditContent');
+    auditContent.innerHTML = '';
+    
+    // Captura todos os selects
+    const allSelects = document.querySelectorAll('.shift-select');
+    
+    // Objeto para armazenar dados processados
+    const empData = {};
+    employees.forEach(emp => {
+      empData[emp] = { days: [] };
+    });
+
+    // Popula os dias
+    allSelects.forEach(select => {
+      const emp = select.getAttribute('data-emp');
+      const dayIndex = parseInt(select.getAttribute('data-day'));
+      const shiftKey = select.value;
+      const hours = shifts[shiftKey].hours;
+      
+      empData[emp].days[dayIndex] = hours;
+    });
+
+    // Calcula semanas e dias consecutivos
+    employees.forEach(emp => {
+      let consecutiveDays = 0;
+      let maxConsecutive = 0;
+      let weeklyHours = 0;
+      let weekCount = 1;
+      
+      let htmlStats = '';
+
+      for (let i = 0; i < globalDayCounter; i++) {
+        const hours = empData[emp].days[i] || 0;
+        
+        // Verifica que dia da semana é o dia 'i' (O dia 0, 1 de Março, é Domingo = 0)
+        const actualWeekDay = (0 + i) % 7; 
+        
+        // Lógica de fechamento de semana: FECHA ANTES DE SOMAR O DOMINGO NOVO
+        if (actualWeekDay === 0 && i !== 0) {
+          // Chegou no domingo (e não é o primeiro dia do calendário).
+          // Salva a semana ANTERIOR.
+          const alertClass = weeklyHours > 44 ? 'stat-alert' : '';
+          htmlStats += `<div class="stat-row ${alertClass}"><span>Semana ${weekCount}:</span> <span>${weeklyHours}h</span></div>`;
+          
+          weeklyHours = 0; // Reseta para a nova semana que começa AGORA (neste Domingo)
+          weekCount++;
+        }
+
+        // Lógica de dias consecutivos
+        if (hours > 0) {
+          consecutiveDays++;
+          if (consecutiveDays > maxConsecutive) maxConsecutive = consecutiveDays;
+        } else {
+          consecutiveDays = 0; // Zerou, teve folga
+        }
+
+        // Lógica de horas na semana: AGORA SOMA O DOMINGO NA SEMANA CORRETA
+        weeklyHours += hours;
+
+        // Se for o último dia do calendário, força o fechamento da última semana parcial
+        if (i === globalDayCounter - 1) {
+             const alertClass = weeklyHours > 44 ? 'stat-alert' : '';
+             htmlStats += `<div class="stat-row ${alertClass}"><span>Semana ${weekCount}:</span> <span>${weeklyHours}h</span></div>`;
+        }
+      }
+
+      // Constrói o card do colaborador
+      const consecAlert = maxConsecutive > 6 ? 'stat-alert' : '';
+      
+      const card = `
+        <div class="employee-card">
+          <div class="employee-name">🧑‍💻 ${emp}</div>
+          <div class="stat-row ${consecAlert}">
+            <span>Máx Dias Seguidos:</span> 
+            <span>${maxConsecutive} dias</span>
+          </div>
+          ${htmlStats}
+        </div>
+      `;
+      auditContent.innerHTML += card;
+    });
+  }
+
+  // Inicia o app ao carregar a página
+  window.onload = initApp;
+
+</script>
+</body>
+</html>
